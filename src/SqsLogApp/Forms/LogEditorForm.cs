@@ -53,14 +53,13 @@ public sealed class LogEditorForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 4,
+            RowCount = 3,
             Padding = new Padding(0, 4, 10, 0)
         };
         addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
         addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         addLeftPanel.Controls.Add(new Label
@@ -92,13 +91,15 @@ public sealed class LogEditorForm : Form
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 6, 0, 6)
         };
+        _summaryTextBox.KeyDown += SummaryTextBoxOnKeyDown;
         addLeftPanel.Controls.Add(_summaryTextBox, 1, 1);
 
         addLeftPanel.Controls.Add(new Label
         {
             Text = "详情：",
-            TextAlign = ContentAlignment.MiddleLeft,
-            Dock = DockStyle.Fill
+            TextAlign = ContentAlignment.TopLeft,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(0, 8, 0, 0)
         }, 0, 2);
 
         _detailTextBox = new TextBox
@@ -106,9 +107,9 @@ public sealed class LogEditorForm : Form
             Multiline = true,
             Dock = DockStyle.Fill,
             ScrollBars = ScrollBars.Vertical,
-            Margin = new Padding(0, 6, 0, 0)
+            Margin = new Padding(0, 8, 0, 0)
         };
-        addLeftPanel.Controls.Add(_detailTextBox, 1, 3);
+        addLeftPanel.Controls.Add(_detailTextBox, 1, 2);
 
         var addRightPanel = new Panel
         {
@@ -203,7 +204,26 @@ public sealed class LogEditorForm : Form
         _currentEntryId = null;
         _summaryTextBox.Clear();
         _detailTextBox.Clear();
-        _summaryTextBox.Focus();
+        FocusSummaryInput();
+    }
+
+    public void FocusSummaryInput()
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return;
+        }
+
+        BeginInvoke(() =>
+        {
+            if (!Visible)
+            {
+                return;
+            }
+
+            _summaryTextBox.Focus();
+            _summaryTextBox.SelectionStart = _summaryTextBox.TextLength;
+        });
     }
 
     private void SaveEntry()
@@ -236,6 +256,18 @@ public sealed class LogEditorForm : Form
         }
 
         SelectEntryById(selectedId);
+    }
+
+    private void SummaryTextBoxOnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+        SaveEntry();
     }
 
     private void EditSelectedEntry()

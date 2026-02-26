@@ -50,7 +50,13 @@ internal sealed class TrayApplicationContext : ApplicationContext
             Text = "工作日志记录工具",
             ContextMenuStrip = contextMenu
         };
-        icon.DoubleClick += (_, _) => ShowLogEditorWindow();
+        icon.MouseClick += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ShowLogEditorWindow();
+            }
+        };
         return icon;
     }
 
@@ -94,6 +100,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _logEditorForm.WindowState = FormWindowState.Normal;
         _logEditorForm.BringToFront();
         _logEditorForm.Activate();
+        _logEditorForm.FocusSummaryInput();
     }
 
     private void ShowLogManagerWindow()
