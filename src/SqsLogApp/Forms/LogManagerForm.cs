@@ -9,8 +9,10 @@ public sealed class LogManagerForm : Form
     private readonly WorkLogRepository _repository;
     private readonly MarkdownExportService _exportService;
 
+    private readonly DateTimePicker _monthPicker;
     private readonly Label _monthTitleLabel;
     private readonly TableLayoutPanel _calendarGrid;
+    private readonly CalendarCellView[] _calendarCells;
     private readonly TextBox _searchKeywordTextBox;
     private readonly DataGridView _searchResultsGrid;
     private readonly DateTimePicker _startDatePicker;
@@ -31,7 +33,7 @@ public sealed class LogManagerForm : Form
         this.EnableEscClose();
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(980, 640);
-        Size = new Size(1100, 720);
+        Size = new Size(2200, 1440);
 
         var tabControl = new TabControl
         {
@@ -62,9 +64,10 @@ public sealed class LogManagerForm : Form
         var headerPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 3
+            ColumnCount = 4
         };
         headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
+        headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
         headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
 
@@ -74,6 +77,26 @@ public sealed class LogManagerForm : Form
             Dock = DockStyle.Fill
         };
         previousMonthButton.Click += (_, _) => ChangeMonth(-1);
+
+        _monthPicker = new DateTimePicker
+        {
+            Dock = DockStyle.Fill,
+            Format = DateTimePickerFormat.Custom,
+            CustomFormat = "yyyy-MM",
+            ShowUpDown = true,
+            Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+        };
+        _monthPicker.ValueChanged += (_, _) =>
+        {
+            var pickedMonth = new DateTime(_monthPicker.Value.Year, _monthPicker.Value.Month, 1);
+            if (pickedMonth == _currentCalendarMonth)
+            {
+                return;
+            }
+
+            _currentCalendarMonth = pickedMonth;
+            RenderCalendarMonth();
+        };
 
         _monthTitleLabel = new Label
         {
@@ -90,8 +113,9 @@ public sealed class LogManagerForm : Form
         nextMonthButton.Click += (_, _) => ChangeMonth(1);
 
         headerPanel.Controls.Add(previousMonthButton, 0, 0);
-        headerPanel.Controls.Add(_monthTitleLabel, 1, 0);
-        headerPanel.Controls.Add(nextMonthButton, 2, 0);
+        headerPanel.Controls.Add(_monthPicker, 1, 0);
+        headerPanel.Controls.Add(_monthTitleLabel, 2, 0);
+        headerPanel.Controls.Add(nextMonthButton, 3, 0);
         calendarRoot.Controls.Add(headerPanel, 0, 0);
 
         var weekdayHeader = new TableLayoutPanel
@@ -134,6 +158,14 @@ public sealed class LogManagerForm : Form
         for (var rowIndex = 0; rowIndex < 6; rowIndex++)
         {
             _calendarGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / 6F));
+        }
+
+        _calendarCells = new CalendarCellView[42];
+        for (var cellIndex = 0; cellIndex < _calendarCells.Length; cellIndex++)
+        {
+            var cell = CreateCalendarCell();
+            _calendarCells[cellIndex] = cell;
+            _calendarGrid.Controls.Add(cell.Container, cellIndex % 7, cellIndex / 7);
         }
 
         calendarRoot.Controls.Add(_calendarGrid, 0, 2);
@@ -350,6 +382,10 @@ public sealed class LogManagerForm : Form
     private void RenderCalendarMonth()
     {
         _monthTitleLabel.Text = $"{_currentCalendarMonth:yyyy年MM月}";
+        if (_monthPicker.Value.Year != _currentCalendarMonth.Year || _monthPicker.Value.Month != _currentCalendarMonth.Month)
+        {
+            _monthPicker.Value = _currentCalendarMonth;
+        }
 
         var summariesByDate = _repository.GetByMonth(_currentCalendarMonth)
             .GroupBy(entry => entry.LogDate.Date)
@@ -362,27 +398,25 @@ public sealed class LogManagerForm : Form
         var firstCellDate = firstDay.AddDays(-startOffset);
 
         _calendarGrid.SuspendLayout();
-        _calendarGrid.Controls.Clear();
 
-        for (var cellIndex = 0; cellIndex < 42; cellIndex++)
+        for (var cellIndex = 0; cellIndex < _calendarCells.Length; cellIndex++)
         {
             var cellDate = firstCellDate.AddDays(cellIndex).Date;
             summariesByDate.TryGetValue(cellDate, out var summaries);
-            var cellControl = CreateCalendarCell(cellDate, cellDate.Month == _currentCalendarMonth.Month, summaries ?? []);
-            _calendarGrid.Controls.Add(cellControl, cellIndex % 7, cellIndex / 7);
+            UpdateCalendarCell(_calendarCells[cellIndex], cellDate, cellDate.Month == _currentCalendarMonth.Month, summaries ?? []);
         }
 
         _calendarGrid.ResumeLayout();
     }
 
-    private static Control CreateCalendarCell(DateTime date, bool isCurrentMonth, IReadOnlyList<string> summaries)
+    private static CalendarCellView CreateCalendarCell()
     {
         var panel = new Panel
         {
             Dock = DockStyle.Fill,
             Margin = new Padding(0),
             Padding = new Padding(4),
-            BackColor = isCurrentMonth ? Color.White : Color.FromArgb(245, 247, 249)
+            BackColor = Color.White
         };
 
         var layout = new TableLayoutPanel
@@ -396,20 +430,14 @@ public sealed class LogManagerForm : Form
 
         var dayLabel = new Label
         {
-            Text = date.ToString("dd"),
+            Text = string.Empty,
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleRight,
-            ForeColor = isCurrentMonth ? Color.FromArgb(38, 59, 87) : Color.FromArgb(145, 152, 162)
+            TextAlign = ContentAlignment.MiddleRight
         };
-        if (date.Date == DateTime.Today)
-        {
-            dayLabel.Font = new Font(dayLabel.Font, FontStyle.Bold);
-            dayLabel.ForeColor = Color.FromArgb(18, 122, 128);
-        }
 
         var summaryLabel = new Label
         {
-            Text = BuildSummaryText(summaries),
+            Text = string.Empty,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.TopLeft,
             ForeColor = Color.FromArgb(61, 86, 112),
@@ -421,7 +449,26 @@ public sealed class LogManagerForm : Form
         layout.Controls.Add(summaryLabel, 0, 1);
         panel.Controls.Add(layout);
 
-        return panel;
+        return new CalendarCellView(panel, dayLabel, summaryLabel);
+    }
+
+    private static void UpdateCalendarCell(
+        CalendarCellView cell,
+        DateTime date,
+        bool isCurrentMonth,
+        IReadOnlyList<string> summaries)
+    {
+        cell.Container.BackColor = isCurrentMonth ? Color.White : Color.FromArgb(245, 247, 249);
+        cell.DayLabel.Text = date.ToString("dd");
+        cell.DayLabel.Font = SystemFonts.DefaultFont;
+        cell.DayLabel.ForeColor = isCurrentMonth ? Color.FromArgb(38, 59, 87) : Color.FromArgb(145, 152, 162);
+
+        if (date.Date == DateTime.Today)
+        {
+            cell.DayLabel.ForeColor = Color.FromArgb(18, 122, 128);
+        }
+
+        cell.SummaryLabel.Text = BuildSummaryText(summaries);
     }
 
     private static string BuildSummaryText(IReadOnlyList<string> summaries)
@@ -541,6 +588,18 @@ public sealed class LogManagerForm : Form
 
     private static string GetExtension(LogExportFormat format)
         => format == LogExportFormat.Markdown ? ".md" : ".txt";
+
+    private sealed class CalendarCellView(
+        Panel container,
+        Label dayLabel,
+        Label summaryLabel)
+    {
+        public Panel Container { get; } = container;
+
+        public Label DayLabel { get; } = dayLabel;
+
+        public Label SummaryLabel { get; } = summaryLabel;
+    }
 
     private sealed class SearchResultRow
     {
