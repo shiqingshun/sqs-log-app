@@ -25,6 +25,7 @@ public sealed class LogEditorForm : Form
         _repository = repository;
         Text = "日志编辑";
         Icon = global::SqsLogApp.AppBranding.AppIcon;
+        this.EnableEscClose();
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(760, 500);
         Size = new Size(860, 560);
@@ -53,13 +54,13 @@ public sealed class LogEditorForm : Form
             Dock = DockStyle.Fill,
             ColumnCount = 2,
             RowCount = 4,
-            Padding = new Padding(0, 0, 10, 0)
+            Padding = new Padding(0, 4, 10, 0)
         };
         addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
         addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         addLeftPanel.Controls.Add(new Label
@@ -73,7 +74,8 @@ public sealed class LogEditorForm : Form
             Dock = DockStyle.Left,
             Format = DateTimePickerFormat.Custom,
             CustomFormat = "yyyy-MM-dd",
-            Width = 150
+            Width = 180,
+            Margin = new Padding(0, 6, 0, 6)
         };
         _datePicker.ValueChanged += (_, _) => OnDateChanged();
         addLeftPanel.Controls.Add(_datePicker, 1, 0);
@@ -87,7 +89,8 @@ public sealed class LogEditorForm : Form
 
         _summaryTextBox = new TextBox
         {
-            Dock = DockStyle.Fill
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 6, 0, 6)
         };
         addLeftPanel.Controls.Add(_summaryTextBox, 1, 1);
 
@@ -102,7 +105,8 @@ public sealed class LogEditorForm : Form
         {
             Multiline = true,
             Dock = DockStyle.Fill,
-            ScrollBars = ScrollBars.Vertical
+            ScrollBars = ScrollBars.Vertical,
+            Margin = new Padding(0, 6, 0, 0)
         };
         addLeftPanel.Controls.Add(_detailTextBox, 1, 3);
 

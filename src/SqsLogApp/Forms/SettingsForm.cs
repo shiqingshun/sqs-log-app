@@ -15,6 +15,7 @@ public sealed class SettingsForm : Form
 
         Text = "设置";
         Icon = global::SqsLogApp.AppBranding.AppIcon;
+        this.EnableEscClose();
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
