@@ -5,11 +5,18 @@ namespace SqsLogApp.Forms;
 
 public sealed class LogEditorForm : Form
 {
+    private const int DefaultListVisibleRows = 5;
+
     private readonly WorkLogRepository _repository;
-    private readonly DateTimePicker _datePicker;
     private readonly ListBox _entriesListBox;
     private readonly TextBox _summaryTextBox;
     private readonly TextBox _detailTextBox;
+    private readonly Button _saveButton;
+    private readonly Label _dateValueLabel;
+    private readonly ToolStripMenuItem _editMenuItem;
+    private readonly ToolStripMenuItem _deleteMenuItem;
+
+    private DateTime _selectedDate = DateTime.Today;
 
     private long? _currentEntryId;
 
@@ -18,8 +25,8 @@ public sealed class LogEditorForm : Form
         _repository = repository;
         Text = "日志编辑";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(850, 560);
-        Size = new Size(980, 620);
+        MinimumSize = new Size(760, 500);
+        Size = new Size(860, 560);
 
         var root = new TableLayoutPanel
         {
@@ -28,151 +35,153 @@ public sealed class LogEditorForm : Form
             ColumnCount = 1,
             Padding = new Padding(10)
         };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 70F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
 
-        var topPanel = new FlowLayoutPanel
+        var addSection = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false
+            ColumnCount = 2,
+            RowCount = 1
         };
+        addSection.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+        addSection.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
 
-        topPanel.Controls.Add(new Label
-        {
-            AutoSize = true,
-            Text = "日志日期：",
-            Margin = new Padding(0, 10, 0, 0)
-        });
-
-        _datePicker = new DateTimePicker
-        {
-            Format = DateTimePickerFormat.Custom,
-            CustomFormat = "yyyy-MM-dd",
-            Width = 140
-        };
-        _datePicker.ValueChanged += (_, _) =>
-        {
-            LoadEntries();
-            StartNewEntry();
-        };
-        topPanel.Controls.Add(_datePicker);
-        root.Controls.Add(topPanel, 0, 0);
-
-        var bodySplitContainer = new SplitContainer
+        var addLeftPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            SplitterDistance = 260
+            ColumnCount = 2,
+            RowCount = 5,
+            Padding = new Padding(0, 0, 10, 0)
         };
-        root.Controls.Add(bodySplitContainer, 0, 1);
+        addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
+        addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 120F));
+        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        _entriesListBox = new ListBox
+        addLeftPanel.Controls.Add(new Label
         {
+            Text = "日期：",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Dock = DockStyle.Fill
+        }, 0, 0);
+        _dateValueLabel = new Label
+        {
+            TextAlign = ContentAlignment.MiddleLeft,
             Dock = DockStyle.Fill
         };
-        _entriesListBox.SelectedIndexChanged += (_, _) => LoadSelectedEntry();
-        bodySplitContainer.Panel1.Controls.Add(_entriesListBox);
+        addLeftPanel.Controls.Add(_dateValueLabel, 1, 0);
 
-        var editPanel = new TableLayoutPanel
+        addLeftPanel.Controls.Add(new Label
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 5
-        };
-        editPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
-        editPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
-        editPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
-        editPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        editPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-
-        editPanel.Controls.Add(new Label
-        {
-            Text = "描述（单行）：",
-            AutoSize = true
-        }, 0, 0);
+            Text = "描述：",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Dock = DockStyle.Fill
+        }, 0, 1);
 
         _summaryTextBox = new TextBox
         {
             Dock = DockStyle.Fill
         };
-        editPanel.Controls.Add(_summaryTextBox, 0, 1);
+        addLeftPanel.Controls.Add(_summaryTextBox, 1, 1);
 
-        editPanel.Controls.Add(new Label
+        addLeftPanel.Controls.Add(new Label
         {
-            Text = "详情（多行）：",
-            AutoSize = true
+            Text = "详情：",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Dock = DockStyle.Fill
         }, 0, 2);
 
         _detailTextBox = new TextBox
         {
-            Dock = DockStyle.Fill,
             Multiline = true,
+            Dock = DockStyle.Top,
             ScrollBars = ScrollBars.Vertical
         };
-        editPanel.Controls.Add(_detailTextBox, 0, 3);
+        _detailTextBox.Height = TextRenderer.MeasureText("A", _detailTextBox.Font).Height * 5 + 12;
+        addLeftPanel.Controls.Add(_detailTextBox, 1, 3);
 
-        var buttonPanel = new FlowLayoutPanel
+        var addRightPanel = new Panel
         {
-            Dock = DockStyle.Right,
-            FlowDirection = FlowDirection.RightToLeft,
-            WrapContents = false
+            Dock = DockStyle.Fill,
+            Padding = new Padding(6)
         };
 
-        var saveButton = new Button
+        _saveButton = new Button
         {
             Text = "保存",
-            AutoSize = true
+            Dock = DockStyle.Fill,
+            Font = new Font(Font.FontFamily, 24F, FontStyle.Bold)
         };
-        saveButton.Click += (_, _) => SaveEntry();
+        _saveButton.Click += (_, _) => SaveEntry();
+        addRightPanel.Controls.Add(_saveButton);
 
-        var deleteButton = new Button
+        addSection.Controls.Add(addLeftPanel, 0, 0);
+        addSection.Controls.Add(addRightPanel, 1, 0);
+        root.Controls.Add(addSection, 0, 0);
+
+        var listSection = new TableLayoutPanel
         {
-            Text = "删除",
-            AutoSize = true
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2
         };
-        deleteButton.Click += (_, _) => DeleteEntry();
+        listSection.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+        listSection.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        var newButton = new Button
+        listSection.Controls.Add(new Label
         {
-            Text = "新增",
-            AutoSize = true
+            Text = "当日日志记录（右键菜单可编辑/删除）",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
+        }, 0, 0);
+
+        var listPanel = new Panel
+        {
+            Dock = DockStyle.Fill
         };
-        newButton.Click += (_, _) => StartNewEntry();
+        _entriesListBox = new ListBox
+        {
+            Dock = DockStyle.Top,
+            IntegralHeight = false
+        };
+        _entriesListBox.Height = _entriesListBox.ItemHeight * DefaultListVisibleRows + 8;
+        _entriesListBox.MouseDown += EntriesListBoxOnMouseDown;
+        listPanel.Controls.Add(_entriesListBox);
+        listSection.Controls.Add(listPanel, 0, 1);
+        root.Controls.Add(listSection, 0, 1);
 
-        buttonPanel.Controls.Add(saveButton);
-        buttonPanel.Controls.Add(deleteButton);
-        buttonPanel.Controls.Add(newButton);
-        editPanel.Controls.Add(buttonPanel, 0, 4);
+        var contextMenu = new ContextMenuStrip();
+        _editMenuItem = new ToolStripMenuItem("编辑");
+        _editMenuItem.Click += (_, _) => EditSelectedEntry();
+        _deleteMenuItem = new ToolStripMenuItem("删除");
+        _deleteMenuItem.Click += (_, _) => DeleteSelectedEntry();
+        contextMenu.Items.AddRange([_editMenuItem, _deleteMenuItem]);
+        contextMenu.Opening += (_, _) => UpdateContextMenuState();
+        _entriesListBox.ContextMenuStrip = contextMenu;
 
-        bodySplitContainer.Panel2.Controls.Add(editPanel);
         Controls.Add(root);
+
+        PrepareForDate(DateTime.Today);
     }
 
     public void PrepareForDate(DateTime date)
     {
-        _datePicker.Value = date.Date;
+        _selectedDate = date.Date;
+        _dateValueLabel.Text = _selectedDate.ToString("yyyy-MM-dd");
         LoadEntries();
         StartNewEntry();
     }
 
     private void LoadEntries()
     {
-        var entries = _repository.GetByDate(_datePicker.Value.Date).ToList();
+        var entries = _repository.GetByDate(_selectedDate).ToList();
         _entriesListBox.DataSource = null;
         _entriesListBox.DataSource = entries;
         _entriesListBox.DisplayMember = nameof(WorkLogEntry.Summary);
-    }
-
-    private void LoadSelectedEntry()
-    {
-        if (_entriesListBox.SelectedItem is not WorkLogEntry selectedEntry)
-        {
-            return;
-        }
-
-        _currentEntryId = selectedEntry.Id;
-        _summaryTextBox.Text = selectedEntry.Summary;
-        _detailTextBox.Text = selectedEntry.Detail;
     }
 
     private void StartNewEntry()
@@ -195,23 +204,44 @@ public sealed class LogEditorForm : Form
 
         var detail = _detailTextBox.Text;
         long selectedId;
+        var isNewEntry = _currentEntryId is null;
         if (_currentEntryId is null)
         {
-            selectedId = _repository.Add(_datePicker.Value.Date, summary, detail);
+            selectedId = _repository.Add(_selectedDate, summary, detail);
         }
         else
         {
             selectedId = _currentEntryId.Value;
-            _repository.Update(selectedId, _datePicker.Value.Date, summary, detail);
+            _repository.Update(selectedId, _selectedDate, summary, detail);
         }
 
         LoadEntries();
+        if (isNewEntry)
+        {
+            StartNewEntry();
+            return;
+        }
+
         SelectEntryById(selectedId);
     }
 
-    private void DeleteEntry()
+    private void EditSelectedEntry()
     {
-        if (_currentEntryId is null)
+        if (!TryGetSelectedEntry(out var selectedEntry))
+        {
+            return;
+        }
+
+        _currentEntryId = selectedEntry.Id;
+        _summaryTextBox.Text = selectedEntry.Summary;
+        _detailTextBox.Text = selectedEntry.Detail;
+        _summaryTextBox.Focus();
+        _summaryTextBox.SelectionStart = _summaryTextBox.TextLength;
+    }
+
+    private void DeleteSelectedEntry()
+    {
+        if (!TryGetSelectedEntry(out var selectedEntry))
         {
             return;
         }
@@ -222,9 +252,13 @@ public sealed class LogEditorForm : Form
             return;
         }
 
-        _repository.Delete(_currentEntryId.Value);
+        _repository.Delete(selectedEntry.Id);
         LoadEntries();
-        StartNewEntry();
+
+        if (_currentEntryId == selectedEntry.Id)
+        {
+            StartNewEntry();
+        }
     }
 
     private void SelectEntryById(long entryId)
@@ -237,5 +271,41 @@ public sealed class LogEditorForm : Form
                 return;
             }
         }
+    }
+
+    private bool TryGetSelectedEntry(out WorkLogEntry selectedEntry)
+    {
+        if (_entriesListBox.SelectedItem is WorkLogEntry entry)
+        {
+            selectedEntry = entry;
+            return true;
+        }
+
+        selectedEntry = null!;
+        return false;
+    }
+
+    private void EntriesListBoxOnMouseDown(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Right)
+        {
+            return;
+        }
+
+        var index = _entriesListBox.IndexFromPoint(e.Location);
+        if (index == ListBox.NoMatches)
+        {
+            _entriesListBox.ClearSelected();
+            return;
+        }
+
+        _entriesListBox.SelectedIndex = index;
+    }
+
+    private void UpdateContextMenuState()
+    {
+        var hasSelection = _entriesListBox.SelectedItem is WorkLogEntry;
+        _editMenuItem.Enabled = hasSelection;
+        _deleteMenuItem.Enabled = hasSelection;
     }
 }
