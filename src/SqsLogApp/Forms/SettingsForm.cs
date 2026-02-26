@@ -14,6 +14,7 @@ public sealed class SettingsForm : Form
         _databasePath = currentConfig.DatabasePath;
 
         Text = "设置";
+        Icon = global::SqsLogApp.AppBranding.AppIcon;
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;

@@ -24,6 +24,7 @@ public sealed class LogEditorForm : Form
     {
         _repository = repository;
         Text = "日志编辑";
+        Icon = global::SqsLogApp.AppBranding.AppIcon;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(760, 500);
         Size = new Size(860, 560);
@@ -156,9 +157,9 @@ public sealed class LogEditorForm : Form
         root.Controls.Add(listSection, 0, 1);
 
         var contextMenu = new ContextMenuStrip();
-        _editMenuItem = new ToolStripMenuItem("编辑");
+        _editMenuItem = new ToolStripMenuItem("编辑", global::SqsLogApp.AppBranding.CreateMenuIcon(global::SqsLogApp.AppMenuIconKind.Edit));
         _editMenuItem.Click += (_, _) => EditSelectedEntry();
-        _deleteMenuItem = new ToolStripMenuItem("删除");
+        _deleteMenuItem = new ToolStripMenuItem("删除", global::SqsLogApp.AppBranding.CreateMenuIcon(global::SqsLogApp.AppMenuIconKind.Delete));
         _deleteMenuItem.Click += (_, _) => DeleteSelectedEntry();
         contextMenu.Items.AddRange([_editMenuItem, _deleteMenuItem]);
         contextMenu.Opening += (_, _) => UpdateContextMenuState();

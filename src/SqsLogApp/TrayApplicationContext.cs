@@ -36,15 +36,16 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private NotifyIcon CreateNotifyIcon()
     {
         var contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add("编辑日志", null, (_, _) => ShowLogEditorWindow());
-        contextMenu.Items.Add("管理日志", null, (_, _) => ShowLogManagerWindow());
-        contextMenu.Items.Add("设置", null, (_, _) => ShowSettingsWindow());
+        contextMenu.ImageScalingSize = new Size(16, 16);
+        contextMenu.Items.Add(new ToolStripMenuItem("编辑日志", AppBranding.CreateMenuIcon(AppMenuIconKind.Edit), (_, _) => ShowLogEditorWindow()));
+        contextMenu.Items.Add(new ToolStripMenuItem("管理日志", AppBranding.CreateMenuIcon(AppMenuIconKind.Manage), (_, _) => ShowLogManagerWindow()));
+        contextMenu.Items.Add(new ToolStripMenuItem("设置", AppBranding.CreateMenuIcon(AppMenuIconKind.Settings), (_, _) => ShowSettingsWindow()));
         contextMenu.Items.Add(new ToolStripSeparator());
-        contextMenu.Items.Add("退出", null, (_, _) => ExitApplication());
+        contextMenu.Items.Add(new ToolStripMenuItem("退出", AppBranding.CreateMenuIcon(AppMenuIconKind.Exit), (_, _) => ExitApplication()));
 
         var icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = AppBranding.AppIcon,
             Visible = true,
             Text = "工作日志记录工具",
             ContextMenuStrip = contextMenu

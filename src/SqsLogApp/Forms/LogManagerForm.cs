@@ -27,6 +27,7 @@ public sealed class LogManagerForm : Form
         _exportService = exportService;
 
         Text = "工作日志管理";
+        Icon = global::SqsLogApp.AppBranding.AppIcon;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(980, 640);
         Size = new Size(1100, 720);
