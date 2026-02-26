@@ -82,20 +82,34 @@ public sealed class MarkdownExportService
     private static string BuildTxt(IReadOnlyList<WorkLogEntry> entries, bool includeDetail)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("日期\t日志描述\t\t日志详情");
-        foreach (var entry in entries)
-        {
-            builder.Append(entry.LogDate.ToString("yyyy-MM-dd"));
-            builder.Append('\t');
-            builder.Append(NormalizeTabText(entry.Summary));
-            builder.Append('\t');
-            builder.Append('\t');
-            if (includeDetail)
-            {
-                builder.Append(NormalizeTabText(entry.Detail).Replace("\n", "\\n", StringComparison.Ordinal));
-            }
+        var groupedEntries = entries
+            .GroupBy(entry => entry.LogDate.Date)
+            .OrderBy(group => group.Key);
 
-            builder.AppendLine();
+        foreach (var group in groupedEntries)
+        {
+            builder.AppendLine(group.Key.ToString("yyyy-MM-dd"));
+            foreach (var entry in group)
+            {
+                builder.Append('\t');
+                builder.AppendLine(NormalizeTabText(entry.Summary));
+
+                if (!includeDetail || string.IsNullOrWhiteSpace(entry.Detail))
+                {
+                    continue;
+                }
+
+                foreach (var detailLine in NormalizeTabText(entry.Detail).Split('\n', StringSplitOptions.None))
+                {
+                    if (string.IsNullOrWhiteSpace(detailLine))
+                    {
+                        continue;
+                    }
+
+                    builder.Append("\t\t");
+                    builder.AppendLine(detailLine);
+                }
+            }
         }
 
         return builder.ToString();
@@ -104,7 +118,7 @@ public sealed class MarkdownExportService
     private static string NormalizeTabText(string text)
         => text.Replace("\r", string.Empty, StringComparison.Ordinal)
             .Replace("\t", " ", StringComparison.Ordinal)
-            .TrimEnd();
+            .Trim();
 
     private static string EscapeInline(string input)
         => input
