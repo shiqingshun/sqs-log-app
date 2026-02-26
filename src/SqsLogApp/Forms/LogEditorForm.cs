@@ -12,7 +12,7 @@ public sealed class LogEditorForm : Form
     private readonly TextBox _summaryTextBox;
     private readonly TextBox _detailTextBox;
     private readonly Button _saveButton;
-    private readonly Label _dateValueLabel;
+    private readonly DateTimePicker _datePicker;
     private readonly ToolStripMenuItem _editMenuItem;
     private readonly ToolStripMenuItem _deleteMenuItem;
 
@@ -51,7 +51,7 @@ public sealed class LogEditorForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 5,
+            RowCount = 4,
             Padding = new Padding(0, 0, 10, 0)
         };
         addLeftPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
@@ -59,7 +59,6 @@ public sealed class LogEditorForm : Form
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
-        addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 120F));
         addLeftPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         addLeftPanel.Controls.Add(new Label
@@ -68,12 +67,15 @@ public sealed class LogEditorForm : Form
             TextAlign = ContentAlignment.MiddleLeft,
             Dock = DockStyle.Fill
         }, 0, 0);
-        _dateValueLabel = new Label
+        _datePicker = new DateTimePicker
         {
-            TextAlign = ContentAlignment.MiddleLeft,
-            Dock = DockStyle.Fill
+            Dock = DockStyle.Left,
+            Format = DateTimePickerFormat.Custom,
+            CustomFormat = "yyyy-MM-dd",
+            Width = 150
         };
-        addLeftPanel.Controls.Add(_dateValueLabel, 1, 0);
+        _datePicker.ValueChanged += (_, _) => OnDateChanged();
+        addLeftPanel.Controls.Add(_datePicker, 1, 0);
 
         addLeftPanel.Controls.Add(new Label
         {
@@ -98,10 +100,9 @@ public sealed class LogEditorForm : Form
         _detailTextBox = new TextBox
         {
             Multiline = true,
-            Dock = DockStyle.Top,
+            Dock = DockStyle.Fill,
             ScrollBars = ScrollBars.Vertical
         };
-        _detailTextBox.Height = TextRenderer.MeasureText("A", _detailTextBox.Font).Height * 5 + 12;
         addLeftPanel.Controls.Add(_detailTextBox, 1, 3);
 
         var addRightPanel = new Panel
@@ -171,7 +172,14 @@ public sealed class LogEditorForm : Form
     public void PrepareForDate(DateTime date)
     {
         _selectedDate = date.Date;
-        _dateValueLabel.Text = _selectedDate.ToString("yyyy-MM-dd");
+        _datePicker.Value = _selectedDate;
+        LoadEntries();
+        StartNewEntry();
+    }
+
+    private void OnDateChanged()
+    {
+        _selectedDate = _datePicker.Value.Date;
         LoadEntries();
         StartNewEntry();
     }
@@ -218,7 +226,7 @@ public sealed class LogEditorForm : Form
         LoadEntries();
         if (isNewEntry)
         {
-            StartNewEntry();
+            Close();
             return;
         }
 
