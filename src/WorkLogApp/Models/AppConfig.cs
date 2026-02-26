@@ -1,4 +1,4 @@
-namespace SqsLogApp.Models;
+namespace WorkLogApp.Models;
 
 public sealed class AppConfig
 {

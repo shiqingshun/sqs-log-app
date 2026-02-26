@@ -1,11 +1,11 @@
 using Microsoft.Win32;
 
-namespace SqsLogApp.Infrastructure;
+namespace WorkLogApp.Infrastructure;
 
 public sealed class AutostartService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string AppName = "SqsLogApp";
+    private const string AppName = "work-log-app";
 
     public void SetEnabled(bool enabled, string executablePath)
     {

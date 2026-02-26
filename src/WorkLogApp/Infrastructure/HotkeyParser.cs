@@ -1,4 +1,4 @@
-namespace SqsLogApp.Infrastructure;
+namespace WorkLogApp.Infrastructure;
 
 [Flags]
 internal enum HotkeyModifiers : uint

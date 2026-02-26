@@ -1,8 +1,8 @@
 using System.Globalization;
 using Microsoft.Data.Sqlite;
-using SqsLogApp.Models;
+using WorkLogApp.Models;
 
-namespace SqsLogApp.Infrastructure;
+namespace WorkLogApp.Infrastructure;
 
 public sealed class WorkLogRepository : IDisposable
 {

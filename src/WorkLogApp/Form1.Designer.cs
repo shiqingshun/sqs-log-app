@@ -1,4 +1,4 @@
-﻿namespace SqsLogApp;
+namespace WorkLogApp;
 
 partial class Form1
 {

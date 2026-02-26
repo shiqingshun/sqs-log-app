@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace SqsLogApp.Infrastructure;
+namespace WorkLogApp.Infrastructure;
 
 internal sealed class GlobalHotkeyListener : NativeWindow, IDisposable
 {

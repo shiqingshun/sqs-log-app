@@ -1,8 +1,8 @@
-using SqsLogApp.Models;
+using WorkLogApp.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace SqsLogApp.Services;
+namespace WorkLogApp.Services;
 
 public sealed class YamlConfigService
 {

@@ -1,4 +1,4 @@
-namespace SqsLogApp;
+namespace WorkLogApp;
 
 internal static class Program
 {
